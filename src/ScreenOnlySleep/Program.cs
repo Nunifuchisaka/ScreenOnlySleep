@@ -54,7 +54,7 @@ namespace ScreenOnlySleep
         if (cmd.RestoreOnly)
         {
           log.Log("restore-only done");
-          return ExitOther;
+          return ddc.HasPendingState ? ExitOther : 0;
         }
 
         int code;

@@ -80,14 +80,17 @@ namespace ScreenOnlySleep
       bool ok = TryRegister(settings.Hotkey);
       UpdateTrayText();
       if (!ok && notify)
+      {
         tray.ShowBalloonTip(10000, Strings.HotkeyConflictTitle, Strings.HotkeyConflict(settings.Hotkey.ToString()), ToolTipIcon.Warning);
+        log.Log("hotkey conflict shown to the user");
+      }
     }
 
     void UpdateTrayText()
     {
       string text = Strings.TrayTip(settings.Hotkey.ToString()) + (hotkeyRegistered ? "" : Strings.HotkeyNotRegisteredSuffix);
       tray.Text = text.Length > 63 ? text.Substring(0, 63) : text;   // NotifyIcon.Text limit
-      blankItem.Text = Strings.MenuBlankNow + (hotkeyRegistered ? "\t" + settings.Hotkey : "");
+      blankItem.ShortcutKeyDisplayString = hotkeyRegistered ? settings.Hotkey.ToString() : null;
     }
 
     // ---------- sessions ----------
