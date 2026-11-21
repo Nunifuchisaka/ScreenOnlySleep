@@ -1,0 +1,10 @@
+bin/
+obj/
+dist/
+*.user
+*.suo
+.vs/
+TestResults/
+*.log
+*.tsv
+settings.ini
