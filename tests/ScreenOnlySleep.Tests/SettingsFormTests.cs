@@ -27,6 +27,53 @@ namespace ScreenOnlySleep.Tests
       }
     }
 
+    [Theory]
+    [InlineData(Keys.Enter, false)]
+    [InlineData(Keys.Escape, false)]
+    [InlineData(Keys.Tab, false)]
+    [InlineData(Keys.Tab | Keys.Shift, false)]
+    [InlineData(Keys.Enter | Keys.Control, true)]
+    [InlineData(Keys.Escape | Keys.Shift, true)]
+    [InlineData(Keys.Tab | Keys.Control, true)]
+    [InlineData(Keys.F12, true)]
+    public void DialogKeysStillWork(Keys key, bool captured)
+    {
+      using (var box = new HotkeyBox(Hotkey.Default))
+      {
+        var m = typeof(HotkeyBox).GetMethod("IsInputKey", BindingFlags.Instance | BindingFlags.NonPublic);
+        Assert.Equal(captured, (bool)m.Invoke(box, new object[] { key }));
+      }
+    }
+
+    [Fact]
+    public void LayoutFitsTheWindow()
+    {
+      using (var form = new SettingsForm(new Settings(), false, h => true))
+      {
+        form.StartPosition = FormStartPosition.Manual;
+        form.Location = new System.Drawing.Point(-3000, -3000);
+        form.ShowInTaskbar = false;
+        form.Show();
+        Application.DoEvents();
+        var client = form.ClientRectangle;
+        foreach (Control c in AllControls(form))
+        {
+          var r = form.RectangleToClient(c.RectangleToScreen(c.ClientRectangle));
+          Assert.True(client.Contains(r), c.GetType().Name + " '" + c.Text + "' " + r + " outside " + client);
+        }
+        form.Close();
+      }
+    }
+
+    static System.Collections.Generic.IEnumerable<Control> AllControls(Control root)
+    {
+      foreach (Control c in root.Controls)
+      {
+        yield return c;
+        foreach (var d in AllControls(c)) yield return d;
+      }
+    }
+
     [Fact]
     public void OkReturnsTheNewSettingsAfterRegistering()
     {

@@ -77,6 +77,8 @@ If the hotkey cannot be registered at startup because another app already uses i
 - Some notifications and other topmost windows can briefly appear in front of the black screens before they are covered again.
 - Monitors without DDC/CI support keep their backlight on, since they are only covered by a black window. On those, the screen is black but still lit.
 - DDC/CI brightness changes may be slow or ignored on some monitors, docks and adapters.
+- ScreenOnlySleep does not keep the PC awake by itself. If your power plan puts the PC to sleep after some idle time, that still happens; change the plan if you need the PC to stay on.
+- While a window running as administrator is in front, real key presses may not be seen (the app runs without administrator rights), so the screens may not come back from the keyboard. Use a mouse button, or switch away from that window first. Not confirmed on real hardware.
 
 ## Disclaimer
 

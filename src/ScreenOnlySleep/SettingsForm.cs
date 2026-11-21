@@ -106,8 +106,11 @@ namespace ScreenOnlySleep
 
     protected override bool IsInputKey(Keys keyData)
     {
-      // plain Tab / Shift+Tab still move the focus
-      if ((keyData & Keys.KeyCode) == Keys.Tab && (keyData & (Keys.Control | Keys.Alt)) == 0) return false;
+      // plain Tab / Shift+Tab still move the focus; plain Enter and Esc still press OK and Cancel
+      var code = keyData & Keys.KeyCode;
+      bool noCtrlAlt = (keyData & (Keys.Control | Keys.Alt)) == 0;
+      if (code == Keys.Tab && noCtrlAlt) return false;
+      if ((code == Keys.Enter || code == Keys.Escape) && (keyData & Keys.Modifiers) == 0) return false;
       return true;
     }
 
