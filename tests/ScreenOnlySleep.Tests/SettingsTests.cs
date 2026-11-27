@@ -244,14 +244,30 @@ namespace ScreenOnlySleep.Tests
       string sub = @"Software\ScreenOnlySleep.Tests\" + Guid.NewGuid().ToString("N");
       try
       {
-        var a = new Autostart(Registry.CurrentUser, sub, "ScreenOnlySleep");
+        string run = sub + @"\Run", approved = sub + @"\StartupApproved\Run";
+        var a = new Autostart(Registry.CurrentUser, run, approved, "ScreenOnlySleep");
         Assert.False(a.IsEnabled);
-        a.Set(false, @"X:\app\ScreenOnlySleep.exe");   // clearing a missing value is fine
+        a.Set(false, @"X:\app\ScreenOnlySleep.exe");   // clearing missing values is fine
         a.Set(true, @"X:\app dir\ScreenOnlySleep.exe");
         Assert.True(a.IsEnabled);
         Assert.Equal("\"X:\\app dir\\ScreenOnlySleep.exe\"", a.GetCommand());
+        Assert.Equal(Autostart.ApprovedEnabledValue(), a.GetApproved());
+        using (var k = Registry.CurrentUser.OpenSubKey(approved))
+          Assert.Equal(RegistryValueKind.Binary, k.GetValueKind("ScreenOnlySleep"));
+
+        // turned off in Task Manager: shown as off, and enabling it again writes 02
+        using (var k = Registry.CurrentUser.OpenSubKey(approved, true))
+          k.SetValue("ScreenOnlySleep", new byte[] { 3, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8 }, RegistryValueKind.Binary);
+        Assert.False(a.IsEnabled);
+        a.Set(true, @"X:\app dir\ScreenOnlySleep.exe");
+        Assert.True(a.IsEnabled);
+        Assert.Equal(Autostart.ApprovedEnabledValue(), a.GetApproved());
+
         a.Set(false, @"X:\app dir\ScreenOnlySleep.exe");
         Assert.False(a.IsEnabled);
+        Assert.Null(a.GetCommand());
+        Assert.Null(a.GetApproved());
+        a.Set(false, @"X:\app dir\ScreenOnlySleep.exe");   // clearing twice is fine
       }
       finally
       {
@@ -263,7 +279,44 @@ namespace ScreenOnlySleep.Tests
     public void DefaultTargetsTheRunKey()
     {
       Assert.Equal(@"Software\Microsoft\Windows\CurrentVersion\Run", Autostart.RunKeyPath);
+      Assert.Equal(@"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run", Autostart.ApprovedKeyPath);
       Assert.Equal("ScreenOnlySleep", Autostart.ValueName);
+    }
+
+    [Fact]
+    public void ApprovedEnabledValueIsTwelveBytesStartingWith02()
+    {
+      var v = Autostart.ApprovedEnabledValue();
+      Assert.Equal(12, v.Length);
+      Assert.Equal(2, v[0]);
+      Assert.True(v.Skip(1).All(b => b == 0));
+      Assert.NotSame(v, Autostart.ApprovedEnabledValue());   // callers cannot change a shared array
+    }
+
+    [Theory]
+    [InlineData(new byte[] { 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, true)]
+    [InlineData(new byte[] { 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, true)]
+    [InlineData(new byte[] { 0 }, true)]
+    [InlineData(new byte[] { 3, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8 }, false)]
+    [InlineData(new byte[] { 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, false)]
+    [InlineData(new byte[] { 1 }, false)]
+    public void ApprovedFirstByteDecides(byte[] approved, bool expected)
+    {
+      Assert.Equal(expected, Autostart.IsEnabledFrom("\"X:\\a.exe\"", approved));
+    }
+
+    [Fact]
+    public void MissingApprovedFollowsRun()
+    {
+      Assert.True(Autostart.IsEnabledFrom("\"X:\\a.exe\"", null));
+      Assert.True(Autostart.IsEnabledFrom("\"X:\\a.exe\"", new byte[0]));
+      Assert.False(Autostart.IsEnabledFrom(null, null));
+    }
+
+    [Fact]
+    public void NoRunValueIsOffEvenIfApproved()
+    {
+      Assert.False(Autostart.IsEnabledFrom(null, Autostart.ApprovedEnabledValue()));
     }
   }
 

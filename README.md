@@ -40,7 +40,7 @@ The exe is not code-signed, so SmartScreen may warn the first time you run it.
 2. Delete the folder that contains `ScreenOnlySleep.exe`.
 3. Delete `%LOCALAPPDATA%\ScreenOnlySleep` (settings and log).
 
-If you deleted the exe without unchecking **Start with Windows**, remove the `ScreenOnlySleep` value under `HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run`.
+If you deleted the exe without unchecking **Start with Windows**, remove the `ScreenOnlySleep` value under both `HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run` and `HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run`.
 
 ## Settings
 
@@ -49,7 +49,7 @@ Open **Settings** from the tray menu.
 | Setting | Default | Notes |
 |---|---|---|
 | Hotkey | Ctrl+Alt+F12 | Click the box and press the new combination. It needs Ctrl, Alt, Shift or Win plus another key. If another app already uses it, you are told so and can pick another. |
-| Start with Windows | off | Adds or removes a value under `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`. |
+| Start with Windows | off | Adds or removes the `ScreenOnlySleep` value under `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`, and the matching value under `HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run` that marks it as enabled for Task Manager's **Startup apps** (some Windows builds skip a Run entry without it). If you turned the app off in Task Manager, this box shows unchecked; checking it turns it back on. |
 | Also set brightness to 0 (DDC/CI) | on | Monitors without DDC/CI are detected automatically and only get the black window. |
 | Turn screens back on after | 12 hours | Safety net, 0.25 to 48 hours. |
 

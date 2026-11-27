@@ -40,7 +40,7 @@ exe にはコード署名がないため、初回の起動で SmartScreen の警
 2. `ScreenOnlySleep.exe` を置いたフォルダーを削除します。
 3. `%LOCALAPPDATA%\ScreenOnlySleep`（設定とログ）を削除します。
 
-チェックを外さずに exe を消してしまった場合は、`HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run` にある `ScreenOnlySleep` の値を削除してください。
+チェックを外さずに exe を消してしまった場合は、`HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run` と `HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run` の両方にある `ScreenOnlySleep` の値を削除してください。
 
 ## 設定
 
@@ -49,7 +49,7 @@ exe にはコード署名がないため、初回の起動で SmartScreen の警
 | 項目 | 既定 | 説明 |
 |---|---|---|
 | ホットキー | Ctrl+Alt+F12 | 入力欄をクリックして、新しい組み合わせを押します。Ctrl・Alt・Shift・Win のどれかと、ほかのキーの組み合わせにします。別のアプリが使っているキーなら、その旨が出るので別のキーを選べます。 |
-| Windows の起動時に自動で起動する | オフ | `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` に値を追加、削除します。 |
+| Windows の起動時に自動で起動する | オフ | `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` の `ScreenOnlySleep` の値と、タスクマネージャーの「スタートアップ アプリ」で有効と扱われるための `HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run` の同名の値を追加、削除します（Windows のビルドによっては、後者が無いと起動されません）。タスクマネージャーで無効にした場合はチェックが外れて表示され、チェックを入れると有効に戻ります。 |
 | 対応モニターは輝度も 0 にする（DDC/CI） | オン | DDC/CI が使えないモニターは自動で見分け、黒いウィンドウだけにします。 |
 | 自動解除までの時間 | 12 時間 | 安全のための自動解除です。0.25〜48 時間で設定できます。 |
 

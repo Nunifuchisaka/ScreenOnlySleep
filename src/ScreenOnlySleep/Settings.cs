@@ -84,46 +84,83 @@ namespace ScreenOnlySleep
     }
   }
 
-  // Start with Windows through a value under HKCU\...\Run. The key is injectable so tests never touch the real one.
+  // Start with Windows through a value under HKCU\...\Run, plus the matching value under
+  // HKCU\...\Explorer\StartupApproved\Run that Task Manager's Startup apps page reads and writes.
+  // Some Windows builds skip a Run entry that has no StartupApproved value, so both are written.
+  // StartupApproved is 12 bytes: the first byte is 02 (or 06) when enabled and 03 (or 07) when the user turned it off,
+  // and the last 8 bytes are the FILETIME it was turned off. The keys are injectable so tests never touch the real ones.
   internal sealed class Autostart
   {
     public const string RunKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
+    public const string ApprovedKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run";
     public const string ValueName = "ScreenOnlySleep";
 
     readonly RegistryKey root;
-    readonly string subKey, valueName;
+    readonly string runKey, approvedKey, valueName;
 
-    public Autostart() : this(Registry.CurrentUser, RunKeyPath, ValueName) { }
+    public Autostart() : this(Registry.CurrentUser, RunKeyPath, ApprovedKeyPath, ValueName) { }
 
-    public Autostart(RegistryKey root, string subKey, string valueName)
+    public Autostart(RegistryKey root, string runKey, string approvedKey, string valueName)
     {
       this.root = root;
-      this.subKey = subKey;
+      this.runKey = runKey;
+      this.approvedKey = approvedKey;
       this.valueName = valueName;
     }
 
     public static string CommandFor(string exePath) { return "\"" + exePath + "\""; }
 
+    // The value Task Manager writes when an entry is enabled.
+    public static byte[] ApprovedEnabledValue()
+    {
+      var v = new byte[12];
+      v[0] = 2;
+      return v;
+    }
+
+    // On when the Run value exists and StartupApproved does not say it was turned off (odd first byte).
+    // A missing or empty StartupApproved value follows the Run value alone.
+    public static bool IsEnabledFrom(string command, byte[] approved)
+    {
+      if (command == null) return false;
+      if (approved == null || approved.Length == 0) return true;
+      return (approved[0] & 1) == 0;
+    }
+
     public string GetCommand()
     {
-      using (var k = root.OpenSubKey(subKey, false))
+      using (var k = root.OpenSubKey(runKey, false))
         return k == null ? null : k.GetValue(valueName) as string;
     }
 
-    public bool IsEnabled { get { return GetCommand() != null; } }
+    public byte[] GetApproved()
+    {
+      using (var k = root.OpenSubKey(approvedKey, false))
+        return k == null ? null : k.GetValue(valueName) as byte[];
+    }
+
+    public bool IsEnabled { get { return IsEnabledFrom(GetCommand(), GetApproved()); } }
 
     public void Set(bool enabled, string exePath)
     {
       if (enabled)
       {
-        using (var k = root.CreateSubKey(subKey, true))
+        using (var k = root.CreateSubKey(runKey, true))
           k.SetValue(valueName, CommandFor(exePath), RegistryValueKind.String);
+        using (var k = root.CreateSubKey(approvedKey, true))
+          k.SetValue(valueName, ApprovedEnabledValue(), RegistryValueKind.Binary);
       }
       else
       {
-        using (var k = root.OpenSubKey(subKey, true))
-          if (k != null && k.GetValue(valueName) != null) k.DeleteValue(valueName, false);
+        DeleteValue(runKey);
+        DeleteValue(approvedKey);
       }
+    }
+
+    void DeleteValue(string subKey)
+    {
+      using (var k = root.OpenSubKey(subKey, true))
+        if (k != null && k.GetValue(valueName) != null) k.DeleteValue(valueName, false);
     }
   }
 
